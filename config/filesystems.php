@@ -57,6 +57,23 @@ return [
             'throw' => false,
         ],
 
+        'sftp' => [
+            'driver' => 'sftp',
+            'host' => '192.168.1.250', // Replace with your Synology NAS IP or hostname
+
+            // Settings for basic authentication...
+            'username' => 'sdnfms-admin',
+            'password' => 'dostSDN11PRISM',
+
+            // If SSH key-based authentication is not required, leave these fields empty
+            'privateKey' => null, // No private key file path if not using key-based auth
+            'passphrase' => null, // No passphrase if not using key-based auth
+
+            // Settings for file / directory permissions...
+            'visibility' => 'private', // `private` = 0600, `public` = 0644
+            'directory_visibility' => 'private', // `private` = 0700, `public` = 0755
+        ],
+
     ],
 
     /*
