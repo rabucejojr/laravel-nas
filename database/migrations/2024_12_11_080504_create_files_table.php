@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('files', function (Blueprint $table) {
             $table->id();
-            $table->string('file_path');
+            $table->string('filename');
             $table->string('uploader');
             $table->string('category');
             $table->date('date');

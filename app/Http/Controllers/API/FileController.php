@@ -41,50 +41,36 @@ class FileController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function store(Request $request)
     {
-        // Validate the request data
-        $validatedData = $request->validate([
-            'files' => 'required|array', // Expect an array of files
-            'files.*' => 'file|mimes:jpg,png,pdf,docx|max:10240', // Validate each file
-            'uploader' => 'required|string|max:255',
-            'category' => 'required|string|in:SETUP,GIA,Others', // Replace with actual categories
-            'date' => 'required|date_format:m/d/Y',
+        // Validate the incoming request to make sure a file is present
+        $validated = $request->validate([
+            'file' => 'required|file', // Adjust validation as needed
         ]);
 
-        try {
-            // Handle multiple file uploads using SFTP disk
-            $filePaths = [];
-            foreach ($request->file('files') as $file) {
-                // Store each file in the SFTP disk
-                $filePath = $file->store('sftp'); // Adjust the directory as needed
-                $filePaths[] = $filePath;
-            }
+        // Ensure that 'file' exists in the request
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
 
-            // Create a new record in the database for each uploaded file
-            foreach ($filePaths as $filePath) {
-                $record = new File(); // Replace with your actual model name
-                $record->file_path = $filePath;
-                $record->uploader = $validatedData['uploader'];
-                $record->category = $validatedData['category'];
-                $record->date = $validatedData['date'];
-                $record->save();
-            }
+            // Use the sftp disk to store the file
+            $path = $file->store('sftp');  // Store in 'files' directory on SFTP
 
-            return response()->json([
-                'message' => 'Files uploaded successfully!',
-                'data' => $filePaths, // Return the file paths for the uploaded files
-            ], 201);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Failed to upload data.',
-                'error' => $e->getMessage()
-            ], 500);
+            // Handle other fields from the request if necessary
+            $uploader = $request->input('uploader');
+            $category = $request->input('category');
+            $date = $request->date('date');
+
+            // Store the file details in the database
+            File::create([
+                'filename' => $path,
+                'uploader' => $uploader,
+                'category' => $category,
+                'date' => $date,
+            ]);
+
+            return response()->json(['message' => 'File uploaded successfully'], 201);
         }
+        return response()->json(['error' => 'No file provided'], 400);
     }
 
     public function show($id)
