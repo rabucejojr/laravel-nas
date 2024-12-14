@@ -15,12 +15,11 @@ class FileController extends Controller
      */
     public function index()
     {
-        // NAS disk
-        $disk = Storage::disk('sftp');
-        $file_uploads = $disk->allFiles();
-        $file = File::all(); // list all file details from mysql
+        // list all file details from mysql
+        $files = File::all();
         return response()->json([
-            'files' => $file
+            // return an array/object of id, filename, uploader,date, category
+            'files' =>$files
         ]);
     }
 
