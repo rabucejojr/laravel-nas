@@ -21,7 +21,7 @@ This repository contains a Laravel 11-based API for a File Management System (FM
 1. Clone the repository:
     ```bash
     git clone https://github.com/rabucejojr/laravel-api.git
-    cd laravel-fms-api
+    cd laravel-api
     ```
 
 2. Install dependencies:
