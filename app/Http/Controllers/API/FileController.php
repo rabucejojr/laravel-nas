@@ -49,9 +49,9 @@ class FileController extends Controller
         $disk = Storage::disk('sftp');
         //upload file to NAS
         $file = $request->file('file');
-        $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
+        // $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
         $filename = $file->getClientOriginalName();
-        $file_upload = $disk->put($path, file_get_contents($file));
+        // $file_upload = $disk->put($path, file_get_contents($file));
 
 
         $file_details = File::create([
