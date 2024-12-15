@@ -4,7 +4,7 @@ This repository contains a Laravel 11-based API for a File Management System (FM
 
 ## Features
 - RESTful API endpoints.
-- File upload with validation.
+- File upload to Synology NAS with validation.
 - Metadata management (e.g., file name, size, and type).
 - File retrieval and download.
 - File update and replacement.
