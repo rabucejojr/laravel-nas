@@ -39,7 +39,7 @@ class FileController extends Controller
     {
         //save file details to mysql db
         $validated = $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
             'date' => 'required|date',
@@ -47,12 +47,13 @@ class FileController extends Controller
 
         // NAS disk
         $disk = Storage::disk('sftp');
+        // Check if validation passed, if not, it will automatically return errors.
         if ($validated) {
             //upload file to NAS
             $file = $request->file('file');
-            // $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
+            $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
             $filename = $file->getClientOriginalName();
-            // $file_upload = $disk->put($path, file_get_contents($file));
+            $file_upload = $disk->put($path, file_get_contents($file));
 
 
             $file_details = File::create([
