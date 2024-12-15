@@ -65,8 +65,6 @@ class FileController extends Controller
             // Return success response
             return response()->json([
                 'message' => 'File uploaded successfully.',
-                // 'file_path' => $uploadedFile, // SFTP file path
-                'file_details' => $file_details, // Database record
             ]);
         }
     }
