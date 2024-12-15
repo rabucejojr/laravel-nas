@@ -59,11 +59,11 @@ return [
 
         'sftp' => [
             'driver' => 'sftp',
-            'host' => '192.168.1.250', // Replace with your Synology NAS IP or hostname
+            'host' => env('NAS_IP'), // Replace with your Synology NAS IP or hostname
 
             // Settings for basic authentication...
-            'username' => 'sdnfms-admin',
-            'password' => 'dostSDN11PRISM',
+            'username' => env('NAS_USERNAME'),
+            'password' => env('NAS_PASSWORD'),
 
             // If SSH key-based authentication is not required, leave these fields empty
             'privateKey' => null, // No private key file path if not using key-based auth
