@@ -19,7 +19,7 @@ class FileController extends Controller
         $files = File::all();
         return response()->json([
             // return an array/object of id, filename, uploader,date, category
-            'files' =>$files
+            'files' => $files
         ]);
     }
 
@@ -38,7 +38,7 @@ class FileController extends Controller
     public function store(Request $request)
     {
         //save file details to mysql db
-        $request->validate([
+        $validated = $request->validate([
             'file' => 'required|file|max:10240',
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
@@ -47,25 +47,27 @@ class FileController extends Controller
 
         // NAS disk
         $disk = Storage::disk('sftp');
-        //upload file to NAS
-        $file = $request->file('file');
-        // $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
-        $filename = $file->getClientOriginalName();
-        // $file_upload = $disk->put($path, file_get_contents($file));
+        if ($validated) {
+            //upload file to NAS
+            $file = $request->file('file');
+            // $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
+            $filename = $file->getClientOriginalName();
+            // $file_upload = $disk->put($path, file_get_contents($file));
 
 
-        $file_details = File::create([
-            'filename' => $filename,
-            'uploader' => $request->input('uploader'),
-            'category' => $request->input('category'),
-            'date' => $request->input('date'),
-        ]);
-        // Return success response
-        return response()->json([
-            'message' => 'File uploaded successfully.',
-            // 'file_path' => $uploadedFile, // SFTP file path
-            'file_details' => $file_details, // Database record
-        ]);
+            $file_details = File::create([
+                'filename' => $filename,
+                'uploader' => $request->input('uploader'),
+                'category' => $request->input('category'),
+                'date' => $request->input('date'),
+            ]);
+            // Return success response
+            return response()->json([
+                'message' => 'File uploaded successfully.',
+                // 'file_path' => $uploadedFile, // SFTP file path
+                'file_details' => $file_details, // Database record
+            ]);
+        }
     }
 
     public function show(File $file)
