@@ -62,6 +62,9 @@ class FileController extends Controller
                 'category' => $request->input('category'),
                 'date' => $request->input('date'),
             ]);
+
+            return $this->index();
+            
             // Return success response
             return response()->json([
                 'message' => 'File uploaded successfully.',
