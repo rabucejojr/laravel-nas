@@ -15,14 +15,13 @@ class FileController extends Controller
      */
     public function index()
     {
-        // list all file details from mysql
-        $files = File::all();
+        // Select specific columns from the File model
+        $files = File::select('id', 'filename', 'uploader', 'date', 'category')->get();
+
         return response()->json([
-            // return an array/object of id, filename, uploader,date, category
-            'files' => $files
+            'files' => $files, // Return the filtered list as JSON
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -64,12 +63,11 @@ class FileController extends Controller
             ]);
 
             return $this->index();
-            
-            // Return success response
-            return response()->json([
-                'message' => 'File uploaded successfully.',
-            ]);
         }
+        // Return success response
+        return response()->json([
+            'message' => 'File uploaded successfully.',
+        ]);
     }
 
     public function show(File $file)
