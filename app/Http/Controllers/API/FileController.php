@@ -7,101 +7,162 @@ use App\Models\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-
 class FileController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        // Select specific columns from the File model
-        $files = File::select('id', 'filename', 'uploader', 'date', 'category')->get();
+        $files = File::select(['id', 'filename', 'uploader', 'date', 'category'])->get();
 
-        return response()->json([
-            'files' => $files, // Return the filtered list as JSON
-        ]);
+        return response()->json(['files' => $files]);
     }
+
     /**
      * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function create()
     {
-        //
-        return response()->json(['message' => "file create endpoint"]);
+        return response()->json(['message' => 'file create endpoint']);
+    }
+
+    /**
+     * Get SFTP storage statistics.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStorageStats()
+    {
+        $disk = Storage::disk('sftp');
+        $files = $disk->allFiles('PSTO-SDN-FMS');
+        $totalFiles = count($files);
+
+        $totalSize = 0;
+        foreach ($files as $file) {
+            $totalSize += $disk->size($file);
+        }
+
+        // Convert bytes to GB
+        $totalSizeGB = round($totalSize / (1024 * 1024 * 1024), 2);
+
+        return response()->json([
+            'total_files' => $totalFiles,
+            'total_size_gb' => $totalSizeGB,
+            'path' => 'PSTO-SDN-FMS'
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
-        //save file details to mysql db
         $validated = $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,ppt,pptx|max:10240',
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
             'date' => 'required|date',
         ]);
 
-        // NAS disk
         $disk = Storage::disk('sftp');
-        // Check if validation passed, if not, it will automatically return errors.
+
         if ($validated) {
-            //upload file to NAS
             $file = $request->file('file');
-            $path = 'PSTO-SDN-FMS/' . $file->getClientOriginalName();
             $filename = $file->getClientOriginalName();
-            $file_upload = $disk->put($path, file_get_contents($file));
+            $path = 'PSTO-SDN-FMS/' . $filename;
 
+            // Check if file already exists in storage
+            if ($disk->exists($path)) {
+                return response()->json([
+                    'message' => 'File already exists on the SFTP server!'
+                ], 400);
+            }
 
-            $file_details = File::create([
+            // Check if file details already exist in database
+            $existingFile = File::where('filename', $filename)
+                ->where('uploader', $request->input('uploader'))
+                ->where('category', $request->input('category'))
+                ->where('date', $request->input('date'))
+                ->first();
+
+            if ($existingFile) {
+                return response()->json([
+                    'message' => 'File details already exist in the system!'
+                ], 400);
+            }
+
+            $fileUploadSuccess = $disk->put($path, file_get_contents($file));
+
+            if (!$fileUploadSuccess) {
+                return response()->json(['message' => 'Upload failed'], 500);
+            }
+
+            File::create([
                 'filename' => $filename,
                 'uploader' => $request->input('uploader'),
                 'category' => $request->input('category'),
                 'date' => $request->input('date'),
             ]);
 
-            return $this->index();
+            return response()->json(['message' => 'Upload successful']);
         }
-        // Return success response
-        return response()->json([
-            'message' => 'File uploaded successfully.',
-        ]);
+
+        return response()->json(['message' => 'Upload failed'], 400);
     }
 
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Models\File  $file
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function show(File $file)
     {
         return response()->json(['file' => $file]);
     }
 
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\File  $file
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update(Request $request, File $file)
     {
-        // Validate the request inputs
-        $request->validate([
-            'file' => 'sometimes|file|max:10240', // File is optional during update
+        // Validate the incoming request
+        $validated = $request->validate([
+            'file' => 'sometimes|file|max:10240', // New file is optional
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
             'date' => 'required|date',
         ]);
 
-        // Initialize the SFTP disk
+        // SFTP disk configuration
         $disk = Storage::disk('sftp');
 
+        // Check if a new file is provided
         if ($request->hasFile('file')) {
-            // Get the uploaded file
             $uploadedFile = $request->file('file');
             $filename = $uploadedFile->getClientOriginalName();
             $path = 'PSTO-SDN-FMS/' . $filename;
 
-            // Check if the file already exists on the NAS
+            // Check if the new file already exists on the SFTP server
             if ($disk->exists($path)) {
                 return response()->json([
                     'message' => 'File already exists on the SFTP server!',
                 ], 400);
             }
 
-            // Upload the new file to the NAS
+            // Upload the new file to the SFTP server
             $fileUploadSuccess = $disk->put($path, file_get_contents($uploadedFile));
 
             if (!$fileUploadSuccess) {
@@ -110,39 +171,47 @@ class FileController extends Controller
                 ], 500);
             }
 
-            // Delete the old file from the NAS if it exists
+            // Delete the old file if it exists
             $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
             if ($disk->exists($oldPath)) {
                 $disk->delete($oldPath);
             }
 
-            // Update the file record in the database
+            // Update the filename in the database
             $file->filename = $filename;
         }
 
-        // Update other file details in the database
-        $file->uploader = $request->input('uploader');
-        $file->category = $request->input('category');
-        $file->date = $request->input('date');
-        $file->save();
+        // Update other file details
+        $file->update([
+            'uploader' => $request->input('uploader'),
+            'category' => $request->input('category'),
+            'date' => $request->input('date'),
+        ]);
 
-        // Return success response
+        // Return a success response with updated file details
         return response()->json([
             'message' => 'File details updated successfully!',
             'file' => $file,
         ]);
     }
 
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Models\File  $file
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy(File $file)
     {
         $disk = Storage::disk('sftp');
-        //get file name from file details in mysql
-        $file_for_delete = 'PSTO-SDN-FMS/' . $file->filename;
-        if ($disk->exists($file_for_delete)) {
-            $disk->delete($file_for_delete);
+        $filePath = 'PSTO-SDN-FMS/' . $file->filename;
+
+        if ($disk->exists($filePath)) {
+            $disk->delete($filePath);
         }
-        // delete file details in mysql
+
         $file->delete();
-        return response()->json(['message' => 'file deleted successfully']);
+
+        return response()->json(['message' => 'File deleted successfully']);
     }
 }
