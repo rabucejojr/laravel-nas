@@ -143,7 +143,7 @@ class FileController extends Controller
 
         // Validate the incoming request
         $validated = $request->validate([
-            'file' => 'sometimes|file|max:10240', // New file is optional
+            'file' => 'nullable|file|max:10240', // New file is optional
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
             'date' => 'required|date',
@@ -171,7 +171,7 @@ class FileController extends Controller
             if ($disk->exists($oldPath)) {
                 $disk->delete($oldPath);
             }
-            
+
             // Update the filename in the database
             $file->filename = $filename;
             // Update other file details
