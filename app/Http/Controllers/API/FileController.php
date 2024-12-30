@@ -138,6 +138,9 @@ class FileController extends Controller
      */
     public function update(Request $request, File $file)
     {
+        // SFTP disk configuration
+        $disk = Storage::disk('sftp');
+
         // Validate the incoming request
         $validated = $request->validate([
             'file' => 'sometimes|file|max:10240', // New file is optional
@@ -146,47 +149,45 @@ class FileController extends Controller
             'date' => 'required|date',
         ]);
 
-        // SFTP disk configuration
-        $disk = Storage::disk('sftp');
-
-        // Check if a new file is provided
-        if ($request->hasFile('file')) {
+        if($request->hasFile('file')){
             $uploadedFile = $request->file('file');
             $filename = $uploadedFile->getClientOriginalName();
             $path = 'PSTO-SDN-FMS/' . $filename;
-
             // Check if the new file already exists on the SFTP server
             if ($disk->exists($path)) {
                 return response()->json([
                     'message' => 'File already exists on the SFTP server!',
                 ], 400);
             }
-
             // Upload the new file to the SFTP server
             $fileUploadSuccess = $disk->put($path, file_get_contents($uploadedFile));
-
             if (!$fileUploadSuccess) {
                 return response()->json([
                     'message' => 'Failed to upload file to SFTP server.',
                 ], 500);
             }
-
             // Delete the old file if it exists
             $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
             if ($disk->exists($oldPath)) {
                 $disk->delete($oldPath);
             }
-
+            
             // Update the filename in the database
             $file->filename = $filename;
+            // Update other file details
+            $file->update([
+                'uploader' => $request->input('uploader'),
+                'category' => $request->input('category'),
+                'date' => $request->input('date'),
+            ]);
+        }else{
+            // Update other file details
+            $file->update([
+                'uploader' => $request->input('uploader'),
+                'category' => $request->input('category'),
+                'date' => $request->input('date'),
+            ]);
         }
-
-        // Update other file details
-        $file->update([
-            'uploader' => $request->input('uploader'),
-            'category' => $request->input('category'),
-            'date' => $request->input('date'),
-        ]);
 
         // Return a success response with updated file details
         return response()->json([
