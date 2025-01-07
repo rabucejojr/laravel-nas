@@ -138,7 +138,6 @@ class FileController extends Controller
      */
     public function update(Request $request, File $file)
     {
-        // SFTP disk configuration
         $disk = Storage::disk('sftp');
 
         // Validate the incoming request
@@ -149,23 +148,25 @@ class FileController extends Controller
             'date' => 'required|date',
         ]);
 
-        if($request->hasFile('file')){
+        if ($request->hasFile('file')) {
             $uploadedFile = $request->file('file');
             $filename = $uploadedFile->getClientOriginalName();
             $path = 'PSTO-SDN-FMS/' . $filename;
-            // Check if the new file already exists on the SFTP server
+
+            // Check if the new file exists on the SFTP server
             if ($disk->exists($path)) {
                 return response()->json([
                     'message' => 'File already exists on the SFTP server!',
                 ], 400);
             }
-            // Upload the new file to the SFTP server
-            $fileUploadSuccess = $disk->put($path, file_get_contents($uploadedFile));
-            if (!$fileUploadSuccess) {
+
+            // Upload the new file
+            if (!$disk->put($path, file_get_contents($uploadedFile))) {
                 return response()->json([
                     'message' => 'Failed to upload file to SFTP server.',
                 ], 500);
             }
+
             // Delete the old file if it exists
             $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
             if ($disk->exists($oldPath)) {
@@ -174,27 +175,21 @@ class FileController extends Controller
 
             // Update the filename in the database
             $file->filename = $filename;
-            // Update other file details
-            $file->update([
-                'uploader' => $request->input('uploader'),
-                'category' => $request->input('category'),
-                'date' => $request->input('date'),
-            ]);
-        }else{
-            // Update other file details
-            $file->update([
-                'uploader' => $request->input('uploader'),
-                'category' => $request->input('category'),
-                'date' => $request->input('date'),
-            ]);
         }
 
-        // Return a success response with updated file details
+        // Update other file details in the database
+        $file->update([
+            'uploader' => $validated['uploader'],
+            'category' => $validated['category'],
+            'date' => $validated['date'],
+        ]);
+
         return response()->json([
             'message' => 'File details updated successfully!',
             'file' => $file,
         ]);
     }
+
 
     /**
      * Remove the specified resource from storage.
