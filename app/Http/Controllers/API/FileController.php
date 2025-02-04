@@ -140,9 +140,9 @@ class FileController extends Controller
     {
         $disk = Storage::disk('sftp');
 
-        // Validate the incoming request
+        // Validate the request
         $validated = $request->validate([
-            'file' => 'nullable|file|max:10240', // New file is optional
+            'file' => 'nullable|file|max:10240',
             'uploader' => 'required|max:255',
             'category' => 'required|max:255',
             'date' => 'required|date',
@@ -150,35 +150,36 @@ class FileController extends Controller
 
         if ($request->hasFile('file')) {
             $uploadedFile = $request->file('file');
-            $filename = $uploadedFile->getClientOriginalName();
+            $filename = time() . '_' . $uploadedFile->getClientOriginalName(); // Ensure unique filename
             $path = 'PSTO-SDN-FMS/' . $filename;
 
-            // Check if the new file exists on the SFTP server
+            // Check if the file already exists
             if ($disk->exists($path)) {
                 return response()->json([
                     'message' => 'File already exists on the SFTP server!',
                 ], 400);
             }
 
-            // Upload the new file
-            if (!$disk->put($path, file_get_contents($uploadedFile))) {
+            // Attempt to upload new file before deleting old one
+            if ($disk->put($path, file_get_contents($uploadedFile))) {
+                // Delete the old file only if the new one was uploaded successfully
+                $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
+                if ($disk->exists($oldPath)) {
+                    $disk->delete($oldPath);
+                }
+
+                // Update filename in database
+                $file->filename = $filename;
+            } else {
                 return response()->json([
                     'message' => 'Failed to upload file to SFTP server.',
                 ], 500);
             }
-
-            // Delete the old file if it exists
-            $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
-            if ($disk->exists($oldPath)) {
-                $disk->delete($oldPath);
-            }
-
-            // Update the filename in the database
-            $file->filename = $filename;
         }
 
-        // Update other file details in the database
+        // Update other file details in database
         $file->update([
+            'filename' => $file->filename, // Ensure filename is updated
             'uploader' => $validated['uploader'],
             'category' => $validated['category'],
             'date' => $validated['date'],
@@ -189,6 +190,7 @@ class FileController extends Controller
             'file' => $file,
         ]);
     }
+
 
 
     /**
