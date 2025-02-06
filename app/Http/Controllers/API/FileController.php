@@ -53,7 +53,7 @@ class FileController extends Controller
         return response()->json([
             'total_files' => $totalFiles,
             'total_size_gb' => $totalSizeGB,
-            'path' => 'PSTO-SDN-FMS'
+            'path' => 'PSTO-SDN-FMS',
         ]);
     }
 
