@@ -32,6 +32,32 @@ class FileController extends Controller
     }
 
     /**
+     * Get SFTP storage statistics.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStorageStats()
+    {
+        $disk = Storage::disk('sftp');
+        $files = $disk->allFiles('PSTO-SDN-FMS');
+        $totalFiles = count($files);
+
+        $totalSize = 0;
+        foreach ($files as $file) {
+            $totalSize += $disk->size($file);
+        }
+
+        // Convert bytes to GB
+        $totalSizeGB = round($totalSize / (1024 * 1024 * 1024), 2);
+
+        return response()->json([
+            'total_files' => $totalFiles,
+            'total_size_gb' => $totalSizeGB,
+            'path' => 'PSTO-SDN-FMS'
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      *
      * @return \Illuminate\Http\JsonResponse
