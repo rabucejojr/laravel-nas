@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
 class BaseController extends Controller
 {
-     /**
+    /**
      * success response method.
      *
      * @return \Illuminate\Http\Response
@@ -16,13 +15,13 @@ class BaseController extends Controller
     {
         $response = [
             'success' => true,
-            'data'    => $result,
+            'data' => $result,
             'message' => $message,
         ];
-  
+
         return response()->json($response, 200);
     }
-  
+
     /**
      * return error response.
      *
@@ -34,11 +33,11 @@ class BaseController extends Controller
             'success' => false,
             'message' => $error,
         ];
-  
-        if(!empty($errorMessages)){
+
+        if (! empty($errorMessages)) {
             $response['data'] = $errorMessages;
         }
-  
+
         return response()->json($response, $code);
     }
 }

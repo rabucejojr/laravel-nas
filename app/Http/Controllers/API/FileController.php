@@ -34,7 +34,6 @@ class FileController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
@@ -51,12 +50,12 @@ class FileController extends Controller
         if ($validated) {
             $file = $request->file('file');
             $filename = $file->getClientOriginalName();
-            $path = 'PSTO-SDN-FMS/' . $filename;
+            $path = 'PSTO-SDN-FMS/'.$filename;
 
             // Check if file already exists in storage
             if ($disk->exists($path)) {
                 return response()->json([
-                    'message' => 'File already exists on the SFTP server!'
+                    'message' => 'File already exists on the SFTP server!',
                 ], 400);
             }
 
@@ -69,13 +68,13 @@ class FileController extends Controller
 
             if ($existingFile) {
                 return response()->json([
-                    'message' => 'File details already exist in the system!'
+                    'message' => 'File details already exist in the system!',
                 ], 400);
             }
 
             $fileUploadSuccess = $disk->put($path, file_get_contents($file));
 
-            if (!$fileUploadSuccess) {
+            if (! $fileUploadSuccess) {
                 return response()->json(['message' => 'Upload failed'], 500);
             }
 
@@ -95,7 +94,6 @@ class FileController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\File  $file
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(File $file)
@@ -106,8 +104,6 @@ class FileController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\File  $file
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, File $file)
@@ -124,8 +120,8 @@ class FileController extends Controller
 
         if ($request->hasFile('file')) {
             $uploadedFile = $request->file('file');
-            $filename = time() . '_' . $uploadedFile->getClientOriginalName(); // Ensure unique filename
-            $path = 'PSTO-SDN-FMS/' . $filename;
+            $filename = time().'_'.$uploadedFile->getClientOriginalName(); // Ensure unique filename
+            $path = 'PSTO-SDN-FMS/'.$filename;
 
             // Check if the file already exists
             if ($disk->exists($path)) {
@@ -137,7 +133,7 @@ class FileController extends Controller
             // Attempt to upload new file before deleting old one
             if ($disk->put($path, file_get_contents($uploadedFile))) {
                 // Delete the old file only if the new one was uploaded successfully
-                $oldPath = 'PSTO-SDN-FMS/' . $file->filename;
+                $oldPath = 'PSTO-SDN-FMS/'.$file->filename;
                 if ($disk->exists($oldPath)) {
                     $disk->delete($oldPath);
                 }
@@ -165,18 +161,15 @@ class FileController extends Controller
         ]);
     }
 
-
-
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\File  $file
      * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(File $file)
     {
         $disk = Storage::disk('sftp');
-        $filePath = 'PSTO-SDN-FMS/' . $file->filename;
+        $filePath = 'PSTO-SDN-FMS/'.$file->filename;
 
         if ($disk->exists($filePath)) {
             $disk->delete($filePath);
